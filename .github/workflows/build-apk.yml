@@ -20,7 +20,8 @@ jobs:
       - name: Install Dependencies
         run: |
           npm install
-          npm install -D typescript @capacitor/cli @capacitor/core @capacitor/android
+          npm install -g @capacitor/cli
+          npm install @capacitor/android --save-dev
       
       - name: Build Web App
         run: npm run build
@@ -34,7 +35,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
       
-      - name: Sync Android Project
+      - name: Add Android Platform
+        run: npx cap add android
+      
+      - name: Sync Android
         run: npx cap sync android
       
       - name: Build APK
