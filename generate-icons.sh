@@ -1,59 +1,104 @@
 #!/bin/bash
 
-echo "🎨 Generating App Icons..."
+echo "🎨 Generating Premium App Icons..."
+echo "=================================="
 
-# Create SVG icon
-cat > /tmp/icon.svg << 'SVGEOF'
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#007acc"/>
-      <stop offset="100%" style="stop-color:#003d6b"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="120" fill="url(#bg)"/>
-  <text x="256" y="280" text-anchor="middle" fill="white" font-size="240" font-weight="bold" font-family="monospace">&lt;/&gt;</text>
-  <text x="256" y="420" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-size="60" font-family="monospace">FCE</text>
-</svg>
-SVGEOF
+ICON_SVG="public/icons/icon.svg"
 
-# Check if ImageMagick available
+# Create all mipmap folders
+mkdir -p android/app/src/main/res/mipmap-mdpi
+mkdir -p android/app/src/main/res/mipmap-hdpi
+mkdir -p android/app/src/main/res/mipmap-xhdpi
+mkdir -p android/app/src/main/res/mipmap-xxhdpi
+mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+mkdir -p android/app/src/main/res/mipmap-anydpi-v26
+
+# Check if ImageMagick is available
 if command -v convert &> /dev/null; then
-    # Generate all sizes
-    for size in 48 72 96 144 192; do
-        case $size in
-            48) folder="mdpi" ;;
-            72) folder="hdpi" ;;
-            96) folder="xhdpi" ;;
-            144) folder="xxhdpi" ;;
-            192) folder="xxxhdpi" ;;
-        esac
-        
-        mkdir -p "android/app/src/main/res/mipmap-${folder}"
-        convert -background none -resize ${size}x${size} /tmp/icon.svg "android/app/src/main/res/mipmap-${folder}/ic_launcher.png"
-        convert -background none -resize ${size}x${size} /tmp/icon.svg "android/app/src/main/res/mipmap-${folder}/ic_launcher_round.png"
-        echo "✅ Generated ${size}x${size} icon"
-    done
+    echo "✅ Using ImageMagick for high quality icons"
+    
+    # Generate regular icons
+    convert -background none -resize 48x48 "$ICON_SVG" "android/app/src/main/res/mipmap-mdpi/ic_launcher.png"
+    convert -background none -resize 72x72 "$ICON_SVG" "android/app/src/main/res/mipmap-hdpi/ic_launcher.png"
+    convert -background none -resize 96x96 "$ICON_SVG" "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png"
+    convert -background none -resize 144x144 "$ICON_SVG" "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png"
+    convert -background none -resize 192x192 "$ICON_SVG" "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png"
+    
+    # Generate round icons
+    convert -background none -resize 48x48 \( "$ICON_SVG" -alpha set \) "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png"
+    convert -background none -resize 72x72 \( "$ICON_SVG" -alpha set \) "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png"
+    convert -background none -resize 96x96 \( "$ICON_SVG" -alpha set \) "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png"
+    convert -background none -resize 144x144 \( "$ICON_SVG" -alpha set \) "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png"
+    convert -background none -resize 192x192 \( "$ICON_SVG" -alpha set \) "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png"
+    
+    echo "✅ All PNG icons generated"
 else
-    echo "⚠️  ImageMagick not installed. Using simple approach..."
-    # Create simple XML-based adaptive icon
-    mkdir -p android/app/src/main/res/mipmap-anydpi-v26
-    
-    cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml << 'XMLEOF'
-<?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/primary"/>
-    <foreground android:drawable="@color/white"/>
-</adaptive-icon>
-XMLEOF
-    
-    cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml << 'XMLEOF'
-<?xml version="1.0" encoding="utf-8"?>
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/primary"/>
-    <foreground android:drawable="@color/white"/>
-</adaptive-icon>
-XMLEOF
+    echo "⚠️  ImageMagick not found, using vector icons"
 fi
 
-echo "✅ Icons generated!"
+# Create adaptive icon (Android 8+)
+cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml << 'XMLEOF'
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background"/>
+    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+</adaptive-icon>
+XMLEOF
+
+cat > android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml << 'XMLEOF'
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_background"/>
+    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+</adaptive-icon>
+XMLEOF
+
+# Create background drawable
+cat > android/app/src/main/res/drawable/ic_launcher_background.xml << 'XMLEOF'
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:startColor="#1a1a2e"
+        android:endColor="#16213e"
+        android:angle="135" />
+    <corners android:radius="20dp" />
+</shape>
+XMLEOF
+
+# Create foreground drawable
+cat > android/app/src/main/res/drawable/ic_launcher_foreground.xml << 'XMLEOF'
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Code brackets -->
+    <group android:translateX="54" android:translateY="45">
+        <path
+            android:fillColor="#00d2ff"
+            android:pathData="M-25,-15 L-15,-5 L-25,5"
+            android:strokeWidth="3"
+            android:strokeColor="#00d2ff"/>
+        <path
+            android:fillColor="#00d2ff"
+            android:pathData="M25,-15 L15,-5 L25,5"
+            android:strokeWidth="3"
+            android:strokeColor="#00d2ff"/>
+    </group>
+    
+    <!-- Text F -->
+    <group android:translateX="54" android:translateY="75">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M-20,-10 L-10,-10 L-10,-2 L-8,-2 L-8,2 L-10,2 L-10,8 L-20,8 Z"/>
+    </group>
+</vector>
+XMLEOF
+
+echo "✅ Adaptive icons created"
+echo "=================================="
+echo "🎉 PREMIUM ICONS GENERATED!"
+echo "📱 App will have beautiful 3D gradient icons"
+echo "=================================="
