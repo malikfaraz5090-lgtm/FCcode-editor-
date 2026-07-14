@@ -1,4 +1,4 @@
-name: Build APK with Permissions
+name: Build APK
 
 on: workflow_dispatch
 
@@ -13,8 +13,10 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Install Dependencies
-        run: npm install
+      - name: Install ALL Dependencies
+        run: |
+          npm install
+          npm install -D typescript @capacitor/cli @capacitor/android
       
       - name: Build Web App
         run: npm run build
@@ -29,10 +31,6 @@ jobs:
           rm -rf android
           npx cap add android
           npx cap sync android
-          
-          # Copy our custom files
-          cp -r android/app/src/main/AndroidManifest.xml android/app/src/main/ 2>/dev/null || true
-          
           echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
       
       - name: Build APK
