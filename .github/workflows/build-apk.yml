@@ -1,8 +1,8 @@
-name: APK Builder Robot
+name: Build APK
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -10,45 +10,36 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Step 1 - Code Download Karo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       
-      - name: Step 2 - Node JS Install Karo
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
       
-      - name: Step 3 - Packages Install Karo
-        run: npm install
+      - run: npm install
       
-      - name: Step 4 - Website Build Karo
-        run: npm run build
+      - run: npm run build
       
-      - name: Step 5 - Java Install Karo
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
       
-      - name: Step 6 - Android Tools Install Karo
-        uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v3
       
-      - name: Step 7 - Android Project Setup Karo
+      - name: Setup Android
         run: |
           npx cap add android
           npx cap sync android
       
-      - name: Step 8 - Gradle Ko Permission Do
-        run: cd android && chmod +x gradlew
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
       
-      - name: Step 9 - APK Build Karo
-        run: cd android && ./gradlew assembleDebug
-      
-      - name: Step 10 - APK Upload Karo
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: MyApp-APK
+          name: FarazCodeEditor-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
-      
-      - name: Step 11 - Happy Dance!
-        run: echo "APK Ready! Download Karo!"
