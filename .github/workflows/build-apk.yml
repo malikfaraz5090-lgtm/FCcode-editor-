@@ -1,10 +1,8 @@
-name: Build APK and AAB
+name: APK Builder Robot
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
@@ -12,55 +10,45 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-    
-    - name: Install Dependencies
-      run: npm ci
-    
-    - name: Build Web App
-      run: npm run build
-    
-    - name: Setup Java
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-    
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
-    
-    - name: Sync Capacitor
-      run: npx cap sync android
-    
-    - name: Build APK
-      run: cd android && ./gradlew assembleRelease
-    
-    - name: Build AAB
-      run: cd android && ./gradlew bundleRelease
-    
-    - name: Sign APK
-      uses: r0adkll/sign-android-release@v1
-      with:
-        releaseDirectory: android/app/build/outputs/apk/release
-        signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-        alias: ${{ secrets.ALIAS }}
-        keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-        keyPassword: ${{ secrets.KEY_PASSWORD }}
-    
-    - name: Upload APK
-      uses: actions/upload-artifact@v3
-      with:
-        name: FarazCodeEditor-APK
-        path: android/app/build/outputs/apk/release/app-release-signed.apk
-    
-    - name: Upload AAB
-      uses: actions/upload-artifact@v3
-      with:
-        name: FarazCodeEditor-AAB
-        path: android/app/build/outputs/bundle/release/app-release.aab
+      - name: Step 1 - Code Download Karo
+        uses: actions/checkout@v4
+      
+      - name: Step 2 - Node JS Install Karo
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Step 3 - Packages Install Karo
+        run: npm install
+      
+      - name: Step 4 - Website Build Karo
+        run: npm run build
+      
+      - name: Step 5 - Java Install Karo
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: Step 6 - Android Tools Install Karo
+        uses: android-actions/setup-android@v3
+      
+      - name: Step 7 - Android Project Setup Karo
+        run: |
+          npx cap add android
+          npx cap sync android
+      
+      - name: Step 8 - Gradle Ko Permission Do
+        run: cd android && chmod +x gradlew
+      
+      - name: Step 9 - APK Build Karo
+        run: cd android && ./gradlew assembleDebug
+      
+      - name: Step 10 - APK Upload Karo
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyApp-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+      
+      - name: Step 11 - Happy Dance!
+        run: echo "APK Ready! Download Karo!"
