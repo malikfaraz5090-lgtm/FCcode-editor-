@@ -1,0 +1,41 @@
+{
+  "name": "faraz-code-editor",
+  "version": "1.0.0",
+  "description": "Professional Android Code Editor - Faraz Code Editor",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:build": "cd android && ./gradlew assembleRelease",
+    "android:build:debug": "cd android && ./gradlew assembleDebug",
+    "android:bundle": "cd android && ./gradlew bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^5.6.0",
+    "@capacitor/app": "^5.0.6",
+    "@capacitor/core": "^5.6.0",
+    "@capacitor/filesystem": "^5.1.4",
+    "@capacitor/share": "^5.0.6",
+    "@capacitor/splash-screen": "^5.0.6",
+    "@capacitor/status-bar": "^5.0.6",
+    "dexie": "^3.2.4",
+    "highlight.js": "^11.9.0",
+    "jszip": "^3.10.1",
+    "monaco-editor": "^0.44.0",
+    "split.js": "^1.6.5",
+    "vite": "^5.0.8",
+    "vue": "^3.3.13",
+    "vue-router": "^4.2.5",
+    "pinia": "^2.1.7",
+    "@vitejs/plugin-vue": "^4.5.2",
+    "file-saver": "^2.0.5"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^5.6.0",
+    "typescript": "^5.3.3",
+    "sass": "^1.69.5"
+  }
+}
