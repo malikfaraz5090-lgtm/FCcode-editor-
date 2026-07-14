@@ -1,121 +1,73 @@
-name: 📱 Build Professional APK
+name: Build APK
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      app_name:
-        description: 'App Name'
-        required: true
-        default: 'Faraz Code Editor'
-      version:
-        description: 'Version'
-        required: true
-        default: '1.0.0'
-      build_type:
-        description: 'Build Type'
-        required: true
-        default: 'debug'
-        type: choice
-        options:
-          - debug
-          - release
 
 jobs:
   build:
-    name: 🏗 Build Android App
     runs-on: ubuntu-latest
     
     steps:
-      - name: 📥 Checkout Code
+      - name: Checkout Code
         uses: actions/checkout@v4
       
-      - name: 🟢 Setup Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
       
-      - name: 📦 Install Dependencies
+      - name: Install Dependencies
         run: |
           npm install
-          npm install -g @capacitor/cli
+          npm install @capacitor/cli @capacitor/android
       
-      - name: 🎨 Generate Icons
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y imagemagick
-          chmod +x generate-icons.sh
-          ./generate-icons.sh
-      
-      - name: 🔨 Build Web App
+      - name: Build Web App
         run: npm run build
       
-      - name: ☕ Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
       
-      - name: 🤖 Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: |
-            platforms;android-34
-            build-tools;34.0.0
-            platform-tools
-            ndk;25.1.8937393
-      
-      - name: 📱 Sync Capacitor Android
-        run: npx cap sync android
-      
-      - name: 🔧 Update Version
+      - name: Setup Android SDK
         run: |
-          sed -i "s/versionName \"1.0.0\"/versionName \"${{ github.event.inputs.version || '1.0.0' }}\"/g" android/app/build.gradle
+          # Install Android SDK manually
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          
+          # Download Android Command Line Tools
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk/cmdline-tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+          unzip commandlinetools-linux-9477386_latest.zip
+          mv cmdline-tools latest
+          
+          # Set environment variables
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
+          
+          # Accept licenses and install SDK
+          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
       
-      - name: 🔨 Build APK
+      - name: Create Android Project
+        run: |
+          npx cap add android
+          npx cap sync android
+      
+      - name: Build APK
         run: |
           cd android
           chmod +x gradlew
-          
-          if [ "${{ github.event.inputs.build_type }}" = "release" ]; then
-            ./gradlew assembleRelease
-          else
-            ./gradlew assembleDebug
-          fi
+          ./gradlew assembleDebug
       
-      - name: 📦 Collect Build Artifacts
-        run: |
-          mkdir -p build-outputs
-          
-          # Copy APK
-          if [ -f android/app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp android/app/build/outputs/apk/debug/app-debug.apk build-outputs/FarazCodeEditor-Debug.apk
-          fi
-          
-          if [ -f android/app/build/outputs/apk/release/app-release.apk ]; then
-            cp android/app/build/outputs/apk/release/app-release.apk build-outputs/FarazCodeEditor-Release.apk
-          fi
-          
-          # Generate build info
-          echo "App Name: ${{ github.event.inputs.app_name || 'Faraz Code Editor' }}" > build-outputs/build-info.txt
-          echo "Version: ${{ github.event.inputs.version || '1.0.0' }}" >> build-outputs/build-info.txt
-          echo "Build Date: $(date)" >> build-outputs/build-info.txt
-          echo "Build Type: ${{ github.event.inputs.build_type || 'debug' }}" >> build-outputs/build-info.txt
-          echo "GitHub SHA: ${{ github.sha }}" >> build-outputs/build-info.txt
-      
-      - name: 📤 Upload APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: FarazCodeEditor-APK-${{ github.event.inputs.version || '1.0.0' }}
-          path: build-outputs/
-      
-      - name: ✅ Build Complete
-        run: |
-          echo "========================================="
-          echo "🎉 BUILD SUCCESSFUL!"
-          echo "========================================="
-          echo "📱 App: ${{ github.event.inputs.app_name || 'Faraz Code Editor' }}"
-          echo "📦 Version: ${{ github.event.inputs.version || '1.0.0' }}"
-          echo "📅 Date: $(date)"
-          echo "========================================="
+          name: FarazCodeEditor-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
