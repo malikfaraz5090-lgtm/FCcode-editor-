@@ -1,0 +1,10 @@
+node_modules/
+dist/
+android/
+*.apk
+*.aab
+*.keystore
+*.jks
+.env
+.DS_Store
+*.log
