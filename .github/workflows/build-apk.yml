@@ -17,8 +17,7 @@ jobs:
       - name: Install Dependencies
         run: |
           npm install
-          npm install -g @capacitor/cli
-          npm install @capacitor/android --save-dev
+          npm install @capacitor/cli @capacitor/android
       
       - name: Build Web App
         run: npm run build
@@ -30,35 +29,27 @@ jobs:
       
       - name: Setup Android SDK
         run: |
-          mkdir -p $HOME/android-sdk/cmdline-tools
-          cd $HOME/android-sdk/cmdline-tools
-          wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip -q commandlinetools-linux-9477386_latest.zip
-          mv cmdline-tools latest
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          # System SDK use karo
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          
+          # Required packages install karo
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" 2>/dev/null || true
       
-      - name: Create Fresh Android Project
+      - name: Create Android Project
         run: |
           rm -rf android
           npx cap add android
           npx cap sync android
       
-      - name: Verify Android Files
-        run: |
-          ls -la android/
-          ls -la android/gradlew
-      
       - name: Build APK
         run: |
           cd android
           chmod +x gradlew
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
           ./gradlew assembleDebug
-      
-      - name: Find APK
-        run: find android/ -name "*.apk"
       
       - uses: actions/upload-artifact@v4
         with:
