@@ -13,10 +13,10 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Install ALL Dependencies
+      - name: Install Dependencies
         run: |
           npm install
-          npm install -D typescript @capacitor/cli @capacitor/android
+          npm install @capacitor/cli @capacitor/android
       
       - name: Build Web App
         run: npm run build
