@@ -14,9 +14,9 @@
       </div>
     </div>
     
-    <!-- Main App -->
+    <!-- Main App - Show only when loaded -->
     <router-view v-else v-slot="{ Component }">
-      <transition name="page-slide" mode="out-in">
+      <transition name="fade" mode="out-in">
         <component :is="Component" />
       </transition>
     </router-view>
@@ -29,29 +29,51 @@ import { ref, onMounted } from 'vue'
 const showSplash = ref(true)
 
 onMounted(() => {
-  // 2 seconds splash screen
+  // Show splash for 2 seconds then load app
   setTimeout(() => {
     showSplash.value = false
-  }, 2500)
+  }, 2000)
 })
 </script>
 
-<style scoped>
-.app-root {
-  width: 100vw;
-  height: 100vh;
+<style>
+/* Global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
   overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: #1e1e1e;
+  color: #cccccc;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
 }
 
 /* Splash Screen */
 .splash-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e1e1e 0%, #252526 100%);
+  background: #1e1e1e;
+  z-index: 9999;
+  transition: opacity 0.3s ease;
 }
 
 .splash-content {
@@ -75,11 +97,11 @@ onMounted(() => {
   font-size: 52px;
   font-weight: bold;
   color: white;
-  font-family: 'Courier New', monospace;
+  font-family: monospace;
 }
 
 .splash-title {
-  font-size: 28px;
+  font-size: 24px;
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 8px;
@@ -92,7 +114,7 @@ onMounted(() => {
 }
 
 .splash-loader {
-  width: 200px;
+  width: 160px;
   height: 3px;
   background: #333;
   border-radius: 3px;
@@ -102,9 +124,9 @@ onMounted(() => {
 
 .loader-bar {
   height: 100%;
-  background: linear-gradient(90deg, #007acc, #4ec9b0);
+  background: #007acc;
   border-radius: 3px;
-  animation: loading 2s ease-in-out infinite;
+  animation: loading 1.5s ease-in-out infinite;
 }
 
 @keyframes logoPulse {
@@ -119,18 +141,38 @@ onMounted(() => {
 }
 
 /* Page Transitions */
-.page-slide-enter-active,
-.page-slide-leave-active {
-  transition: all 0.3s ease;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
 }
 
-.page-slide-enter-from {
-  transform: translateX(30px);
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
-.page-slide-leave-to {
-  transform: translateX(-30px);
-  opacity: 0;
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Selection */
+::selection {
+  background: #264f78;
+  color: #fff;
 }
 </style>

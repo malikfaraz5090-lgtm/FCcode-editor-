@@ -5,7 +5,31 @@ const config: CapacitorConfig = {
   appName: 'Faraz Code Editor',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    cleartext: true,
+    allowNavigation: ['*']
+  },
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
+    initialFocus: false,
+    useLegacyBridge: false
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 2000,
+      launchAutoHide: true,
+      backgroundColor: '#1e1e1e',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false
+    },
+    CapacitorHttp: {
+      enabled: true
+    },
+    Filesystem: {
+      androidDirectory: 'Documents'
+    }
   }
 }
 

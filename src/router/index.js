@@ -1,7 +1,9 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import HomeScreen from '../views/HomeScreen.vue'
-import EditorScreen from '../views/EditorScreen.vue'
-import SettingsScreen from '../views/SettingsScreen.vue'
+
+// Lazy load pages for better performance
+const HomeScreen = () => import('../views/HomeScreen.vue')
+const EditorScreen = () => import('../views/EditorScreen.vue')
+const SettingsScreen = () => import('../views/SettingsScreen.vue')
 
 const routes = [
   {
@@ -24,6 +26,11 @@ const routes = [
 const router = createRouter({
   history: createWebHashHistory(),
   routes
+})
+
+// Error handling
+router.onError((error) => {
+  console.error('Router error:', error)
 })
 
 export default router
