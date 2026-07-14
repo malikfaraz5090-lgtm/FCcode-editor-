@@ -12,24 +12,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
       
       - name: Install Dependencies
         run: |
           npm install
-          npm install -g @capacitor/cli @capacitor/core @capacitor/android
+          npm install -D typescript @capacitor/cli @capacitor/core @capacitor/android
       
       - name: Build Web App
         run: npm run build
       
-      - uses: actions/setup-java@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
       
-      - uses: android-actions/setup-android@v3
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
       
       - name: Add Android Platform
         run: |
@@ -42,7 +45,7 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
       
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: FarazCodeEditor-APK
