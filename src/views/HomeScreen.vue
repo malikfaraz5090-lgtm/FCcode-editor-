@@ -1,184 +1,158 @@
-cat > src/views/HomeScreen.vue << 'EOF'
 <template>
   <div class="home-screen">
-    <!-- Header -->
-    <header class="app-bar">
-      <div class="app-bar-left">
-        <div class="logo">
-          <svg width="32" height="32" viewBox="0 0 32 32">
-            <rect width="32" height="32" rx="6" fill="#007acc"/>
-            <text x="16" y="22" text-anchor="middle" fill="white" font-size="16" font-weight="bold" font-family="monospace">F</text>
-          </svg>
-          <h1 class="app-title">Faraz Code Editor</h1>
+    <!-- TOP BAR -->
+    <header class="top-bar">
+      <div class="bar-left">
+        <div class="logo-small">
+          <span>F</span>
         </div>
+        <h1 class="bar-title">Faraz Code Editor</h1>
       </div>
-      <div class="app-bar-right">
-        <button class="icon-btn" @click="$router.push('/settings')" title="Settings">
-          <span>⚙️</span>
+      <div class="bar-right">
+        <button class="icon-btn" @click="goToSettings" title="Settings">
+          ⚙️
         </button>
       </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- MAIN CONTENT -->
     <main class="home-content">
-      <!-- Create Project -->
+      <!-- CREATE PROJECT BUTTON -->
       <div class="create-section">
         <button class="create-btn" @click="showCreateDialog = true">
           <span class="create-icon">+</span>
-          <span class="create-text">Create New Project</span>
+          <span class="create-label">Create New Project</span>
         </button>
       </div>
 
-      <!-- Search & Sort -->
-      <div class="controls-bar" v-if="projectStore.projects.length > 0">
-        <div class="search-box">
-          <span>🔍</span>
-          <input 
-            v-model="projectStore.searchQuery" 
-            type="text" 
-            placeholder="Search projects..."
-            class="search-input"
-          >
+      <!-- PROJECTS LIST -->
+      <section class="projects-section" v-if="projectStore.sortedProjects.length > 0">
+        <div class="section-header">
+          <h2>My Projects</h2>
+          <span class="project-count">{{ projectStore.sortedProjects.length }} projects</span>
         </div>
-        <div class="sort-btns">
-          <button 
-            class="sort-btn" 
-            :class="{ active: projectStore.sortBy === 'name' }"
-            @click="projectStore.sortBy = 'name'"
-          >
-            Name
-          </button>
-          <button 
-            class="sort-btn" 
-            :class="{ active: projectStore.sortBy === 'lastModified' }"
-            @click="projectStore.sortBy = 'lastModified'"
-          >
-            Date
-          </button>
-        </div>
-      </div>
 
-      <!-- Projects Grid -->
-      <div class="projects-section" v-if="projectStore.filteredProjects.length > 0">
-        <div class="projects-grid">
+        <div class="projects-list">
           <div 
-            v-for="project in projectStore.filteredProjects" 
+            v-for="project in projectStore.sortedProjects" 
             :key="project.id"
             class="project-card"
-            :style="{ borderLeft: `4px solid ${project.color}` }"
-            @click="openProject(project)"
+            :style="{ borderLeftColor: project.color }"
           >
-            <div class="card-top">
+            <div class="card-main" @click="openProject(project.id)">
               <div class="card-icon" :style="{ background: project.color }">
-                <span>{{ project.icon === 'code' ? '📁' : '📂' }}</span>
+                {{ project.type === 'web' ? '🌐' : '📱' }}
               </div>
-              <div class="card-actions">
-                <button 
-                  class="action-btn"
-                  :class="{ active: project.isFavorite }"
-                  @click.stop="projectStore.toggleFavorite(project.id)"
-                  title="Favorite"
-                >
-                  {{ project.isFavorite ? '⭐' : '☆' }}
-                </button>
-                <button 
-                  class="action-btn"
-                  @click.stop="showContextMenu(project, $event)"
-                  title="More"
-                >
-                  ⋮
-                </button>
+              <div class="card-info">
+                <h3 class="card-title">{{ project.name }}</h3>
+                <p class="card-desc" v-if="project.description">{{ project.description }}</p>
+                <div class="card-meta">
+                  <span class="meta-item">📁 {{ project.files.length }} files</span>
+                  <span class="meta-item">🕐 {{ formatDate(project.updatedAt) }}</span>
+                  <span class="meta-item" :style="{ color: project.color }">{{ project.language.toUpperCase() }}</span>
+                </div>
               </div>
             </div>
-            
-            <div class="card-body">
-              <h3 class="card-title">{{ project.name }}</h3>
-              <p class="card-date">{{ formatDate(project.lastModified) }}</p>
-            </div>
-
-            <div class="card-footer">
-              <button class="footer-btn" @click.stop="openProject(project)">
-                Open
+            <div class="card-actions">
+              <button class="action-btn" @click.stop="openProject(project.id)" title="Edit">
+                ✏️
               </button>
-              <button class="footer-btn" @click.stop="duplicateProject(project.id)">
-                Copy
+              <button class="action-btn" @click.stop="duplicateProject(project.id)" title="Duplicate">
+                📋
               </button>
-              <button class="footer-btn danger" @click.stop="confirmDelete(project)">
-                Delete
+              <button class="action-btn" @click.stop="confirmDelete(project)" title="Delete">
+                🗑️
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Empty State -->
+      <!-- EMPTY STATE -->
       <div v-else class="empty-state">
-        <div class="empty-icon">📁</div>
+        <div class="empty-icon">📂</div>
         <h2>No Projects Yet</h2>
-        <p>Create your first project to start coding!</p>
-        <button class="create-btn" @click="showCreateDialog = true">
-          Create Project
-        </button>
+        <p>Click the button above to create your first project!</p>
       </div>
     </main>
 
-    <!-- Create Project Dialog -->
+    <!-- CREATE PROJECT DIALOG -->
     <div v-if="showCreateDialog" class="dialog-overlay" @click.self="showCreateDialog = false">
-      <div class="dialog">
+      <div class="create-dialog">
         <h2 class="dialog-title">Create New Project</h2>
-        <div class="dialog-body">
+        
+        <div class="dialog-form">
           <div class="form-group">
-            <label>Project Name</label>
+            <label>Project Name *</label>
             <input 
               v-model="newProject.name" 
               type="text" 
               placeholder="My Awesome Project"
               class="form-input"
-              @keyup.enter="createProject"
               ref="nameInput"
             >
           </div>
+          
+          <div class="form-group">
+            <label>Description</label>
+            <input 
+              v-model="newProject.description" 
+              type="text" 
+              placeholder="What is this project about?"
+              class="form-input"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Project Type</label>
+            <select v-model="newProject.type" class="form-select">
+              <option value="web">Web (HTML/CSS/JS)</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="php">PHP</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Main Language</label>
+            <select v-model="newProject.language" class="form-select">
+              <option value="html">HTML</option>
+              <option value="javascript">JavaScript</option>
+              <option value="typescript">TypeScript</option>
+              <option value="python">Python</option>
+              <option value="java">Java</option>
+              <option value="cpp">C++</option>
+              <option value="php">PHP</option>
+            </select>
+          </div>
+
           <div class="form-group">
             <label>Theme Color</label>
             <div class="color-options">
               <button 
-                v-for="color in colors" 
+                v-for="color in projectColors" 
                 :key="color"
                 class="color-dot"
-                :class="{ selected: newProject.color === color }"
+                :class="{ active: newProject.color === color }"
                 :style="{ background: color }"
                 @click="newProject.color = color"
               ></button>
             </div>
           </div>
         </div>
-        <div class="dialog-footer">
+
+        <div class="dialog-actions">
           <button class="btn-cancel" @click="showCreateDialog = false">Cancel</button>
-          <button class="btn-create" @click="createProject" :disabled="!newProject.name.trim()">
-            Create
+          <button 
+            class="btn-create" 
+            @click="createNewProject"
+            :disabled="!newProject.name.trim()"
+          >
+            Create Project
           </button>
         </div>
       </div>
-    </div>
-
-    <!-- Context Menu -->
-    <div 
-      v-if="contextMenu.show" 
-      class="context-menu"
-      :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
-    >
-      <button class="menu-item" @click="renameProject(contextMenu.project)">
-        ✏️ Rename
-      </button>
-      <button class="menu-item" @click="duplicateProject(contextMenu.project.id)">
-        📋 Duplicate
-      </button>
-      <button class="menu-item" @click="exportProject(contextMenu.project.id)">
-        📤 Export
-      </button>
-      <button class="menu-item danger" @click="confirmDelete(contextMenu.project)">
-        🗑️ Delete
-      </button>
     </div>
   </div>
 </template>
@@ -193,110 +167,88 @@ const projectStore = useProjectStore()
 
 const showCreateDialog = ref(false)
 const nameInput = ref(null)
+
 const newProject = reactive({
   name: '',
-  color: '#007acc',
-  icon: 'code'
+  description: '',
+  type: 'web',
+  language: 'html',
+  color: '#007acc'
 })
 
-const colors = ['#007acc', '#4ec9b0', '#f44747', '#cca700', '#3794ff', '#b180d7', '#d16969', '#608b4e']
+const projectColors = [
+  '#007acc', '#4ec9b0', '#f44747', '#cca700',
+  '#3794ff', '#b180d7', '#d16969', '#608b4e',
+  '#e91e63', '#9c27b0', '#ff5722', '#795548'
+]
 
-const contextMenu = reactive({
-  show: false,
-  x: 0,
-  y: 0,
-  project: null
+// Watch dialog open to focus input
+watch(showCreateDialog, async (val) => {
+  if (val) {
+    await nextTick()
+    nameInput.value?.focus()
+  }
 })
 
-onMounted(() => {
-  document.addEventListener('click', () => {
-    contextMenu.show = false
-  })
-})
-
-async function createProject() {
+function createNewProject() {
   if (!newProject.name.trim()) return
   
-  const project = await projectStore.createProject(
-    newProject.name.trim(),
-    newProject.color,
-    newProject.icon
-  )
+  const project = projectStore.createProject({
+    name: newProject.name.trim(),
+    description: newProject.description.trim(),
+    type: newProject.type,
+    language: newProject.language,
+    color: newProject.color
+  })
   
-  showCreateDialog.value = false
+  // Reset form
   newProject.name = ''
+  newProject.description = ''
+  newProject.type = 'web'
+  newProject.language = 'html'
   newProject.color = '#007acc'
   
-  openProject(project)
-}
-
-function openProject(project) {
-  projectStore.currentProject = project
+  showCreateDialog.value = false
+  
+  // Open editor
   router.push(`/editor/${project.id}`)
 }
 
-async function duplicateProject(id) {
-  await projectStore.duplicateProject(id)
-  contextMenu.show = false
+function openProject(id) {
+  router.push(`/editor/${id}`)
+}
+
+function duplicateProject(id) {
+  projectStore.duplicateProject(id)
 }
 
 function confirmDelete(project) {
   if (confirm(`Delete "${project.name}"? This cannot be undone.`)) {
     projectStore.deleteProject(project.id)
   }
-  contextMenu.show = false
 }
 
-async function renameProject(project) {
-  const newName = prompt('Enter new name:', project.name)
-  if (newName && newName.trim()) {
-    await projectStore.renameProject(project.id, newName.trim())
-  }
-  contextMenu.show = false
+function goToSettings() {
+  router.push('/settings')
 }
 
-async function exportProject(id) {
-  const data = await projectStore.exportProject(id)
-  if (data) {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${data.project.name}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-  contextMenu.show = false
-}
-
-function showContextMenu(project, event) {
-  contextMenu.show = true
-  contextMenu.x = event.clientX
-  contextMenu.y = event.clientY
-  contextMenu.project = project
-  event.stopPropagation()
-}
-
-function formatDate(dateString) {
-  const date = new Date(dateString)
+function formatDate(dateStr) {
+  const date = new Date(dateStr)
   const now = new Date()
   const diff = now - date
   const days = Math.floor(diff / (1000 * 60 * 60 * 24))
   
   if (days === 0) {
     const hours = Math.floor(diff / (1000 * 60 * 60))
-    if (hours === 0) {
-      const minutes = Math.floor(diff / (1000 * 60))
-      return `${minutes} min ago`
-    }
-    return `${hours} hours ago`
+    if (hours === 0) return 'Just now'
+    return `${hours}h ago`
   }
   if (days === 1) return 'Yesterday'
-  if (days < 7) return `${days} days ago`
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  if (days < 7) return `${days}d ago`
+  return date.toLocaleDateString()
 }
 
-// Auto-focus input when dialog opens
+// Auto-focus when dialog opens
 watch(showCreateDialog, async (val) => {
   if (val) {
     await nextTick()
@@ -310,163 +262,188 @@ watch(showCreateDialog, async (val) => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--bg-primary);
+  background: #1e1e1e;
+  color: #cccccc;
 }
 
-.app-bar {
+/* Top Bar */
+.top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  background: #252526;
+  border-bottom: 1px solid #3e3e42;
 }
 
-.app-bar-left .logo {
+.bar-left {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.app-title {
-  font-size: 18px;
+.logo-small {
+  width: 32px;
+  height: 32px;
+  background: #007acc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  font-size: 16px;
+}
+
+.bar-title {
+  font-size: 16px;
   font-weight: 600;
-  color: var(--text-highlight);
+  color: #fff;
 }
 
 .icon-btn {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: #2d2d30;
+  border: 1px solid #3e3e42;
+  color: #ccc;
+  font-size: 20px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  font-size: 18px;
-  transition: background 0.2s;
+  transition: all 0.2s;
 }
 
 .icon-btn:hover {
-  background: var(--bg-hover);
+  background: #37373d;
+  border-color: #007acc;
 }
 
+/* Home Content */
 .home-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
+  padding: 24px 20px;
 }
 
+/* Create Button */
 .create-section {
   display: flex;
   justify-content: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .create-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 28px;
-  background: var(--accent-color);
+  gap: 12px;
+  padding: 16px 32px;
+  background: linear-gradient(135deg, #007acc, #005a9e);
   color: white;
-  border-radius: 10px;
+  border: none;
+  border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
-  transition: all 0.2s;
-  box-shadow: var(--shadow-md);
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 20px rgba(0, 122, 204, 0.3);
 }
 
 .create-btn:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0, 122, 204, 0.5);
 }
 
 .create-icon {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 300;
 }
 
-.controls-bar {
+/* Projects Section */
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  gap: 16px;
+  margin-bottom: 16px;
 }
 
-.search-box {
+.section-header h2 {
+  font-size: 18px;
+  color: #fff;
+}
+
+.project-count {
+  font-size: 12px;
+  color: #999;
+}
+
+.projects-list {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg-secondary);
-  padding: 8px 12px;
-  border-radius: 8px;
-  flex: 1;
-  border: 1px solid var(--border-color);
-}
-
-.search-box input {
-  flex: 1;
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.sort-btns {
-  display: flex;
-  gap: 4px;
-  background: var(--bg-secondary);
-  padding: 4px;
-  border-radius: 6px;
-}
-
-.sort-btn {
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  transition: all 0.2s;
-}
-
-.sort-btn.active {
-  background: var(--accent-color);
-  color: white;
-}
-
-.projects-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .project-card {
-  background: var(--bg-secondary);
-  border-radius: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #252526;
+  border-left: 4px solid #007acc;
+  border-radius: 8px;
   padding: 16px;
-  cursor: pointer;
   transition: all 0.2s;
 }
 
 .project-card:hover {
-  background: var(--bg-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  background: #2a2d2e;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 }
 
-.card-top {
+.card-main {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  cursor: pointer;
 }
 
 .card-icon {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: 24px;
+}
+
+.card-info {
+  flex: 1;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.card-desc {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 6px;
+}
+
+.card-meta {
+  display: flex;
+  gap: 16px;
+}
+
+.meta-item {
+  font-size: 11px;
+  color: #888;
 }
 
 .card-actions {
@@ -475,74 +452,29 @@ watch(showCreateDialog, async (val) => {
 }
 
 .action-btn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: #2d2d30;
+  border: 1px solid #3e3e42;
+  color: #ccc;
+  font-size: 14px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  font-size: 16px;
-  transition: background 0.2s;
-}
-
-.action-btn:hover {
-  background: var(--bg-active);
-}
-
-.action-btn.active {
-  color: #ffd700;
-}
-
-.card-body {
-  margin-bottom: 12px;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-highlight);
-  margin-bottom: 4px;
-}
-
-.card-date {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.card-footer {
-  display: flex;
-  gap: 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
-}
-
-.footer-btn {
-  flex: 1;
-  padding: 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  text-align: center;
-  color: var(--text-secondary);
   transition: all 0.2s;
 }
 
-.footer-btn:hover {
-  background: var(--bg-active);
-  color: var(--text-primary);
+.action-btn:hover {
+  background: #37373d;
+  border-color: #007acc;
 }
 
-.footer-btn.danger:hover {
-  background: rgba(244, 71, 71, 0.1);
-  color: #f44747;
-}
-
+/* Empty State */
 .empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
   text-align: center;
+  padding: 60px 20px;
 }
 
 .empty-icon {
@@ -553,13 +485,12 @@ watch(showCreateDialog, async (val) => {
 
 .empty-state h2 {
   font-size: 20px;
-  color: var(--text-highlight);
+  color: #fff;
   margin-bottom: 8px;
 }
 
 .empty-state p {
-  color: var(--text-secondary);
-  margin-bottom: 24px;
+  color: #999;
 }
 
 /* Dialog */
@@ -567,7 +498,7 @@ watch(showCreateDialog, async (val) => {
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -575,23 +506,20 @@ watch(showCreateDialog, async (val) => {
   backdrop-filter: blur(4px);
 }
 
-.dialog {
-  background: var(--bg-secondary);
-  border-radius: 12px;
+.create-dialog {
+  background: #252526;
+  border-radius: 16px;
   padding: 24px;
   width: 90%;
-  max-width: 420px;
-  box-shadow: var(--shadow-lg);
+  max-width: 450px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
 
 .dialog-title {
   font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  color: var(--text-highlight);
-}
-
-.dialog-body {
+  color: #fff;
   margin-bottom: 20px;
 }
 
@@ -601,24 +529,25 @@ watch(showCreateDialog, async (val) => {
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: var(--text-secondary);
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 6px;
   font-weight: 500;
 }
 
-.form-input {
+.form-input, .form-select {
   width: 100%;
   padding: 10px 12px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
+  background: #1e1e1e;
+  border: 1px solid #3e3e42;
+  border-radius: 8px;
+  color: #fff;
   font-size: 14px;
-  color: var(--text-primary);
 }
 
-.form-input:focus {
-  border-color: var(--accent-color);
+.form-input:focus, .form-select:focus {
+  border-color: #007acc;
+  outline: none;
 }
 
 .color-options {
@@ -632,92 +561,52 @@ watch(showCreateDialog, async (val) => {
   height: 28px;
   border-radius: 50%;
   border: 2px solid transparent;
-  transition: all 0.2s;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-.color-dot.selected {
+.color-dot.active {
   border-color: white;
   transform: scale(1.2);
 }
 
-.dialog-footer {
+.dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  margin-top: 20px;
 }
 
 .btn-cancel, .btn-create {
-  padding: 8px 20px;
-  border-radius: 6px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
   font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-cancel {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: #3e3e42;
+  color: #ccc;
 }
 
 .btn-cancel:hover {
-  background: var(--bg-hover);
+  background: #4e4e52;
 }
 
 .btn-create {
-  background: var(--accent-color);
+  background: #007acc;
   color: white;
 }
 
 .btn-create:hover:not(:disabled) {
-  background: var(--accent-hover);
+  background: #005a9e;
 }
 
 .btn-create:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-
-/* Context Menu */
-.context-menu {
-  position: fixed;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 4px;
-  min-width: 160px;
-  box-shadow: var(--shadow-lg);
-  z-index: 2000;
-}
-
-.menu-item {
-  display: block;
-  width: 100%;
-  padding: 8px 12px;
-  text-align: left;
-  border-radius: 4px;
-  font-size: 13px;
-  color: var(--text-primary);
-  transition: background 0.2s;
-}
-
-.menu-item:hover {
-  background: var(--bg-hover);
-}
-
-.menu-item.danger:hover {
-  background: rgba(244, 71, 71, 0.1);
-  color: #f44747;
-}
-
-@media (max-width: 768px) {
-  .projects-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .controls-bar {
-    flex-direction: column;
-  }
-}
 </style>
-EOF

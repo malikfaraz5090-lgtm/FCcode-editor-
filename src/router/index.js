@@ -1,24 +1,23 @@
-cat > src/router/index.js << 'EOF'
 import { createRouter, createWebHashHistory } from 'vue-router'
+import HomeScreen from '../views/HomeScreen.vue'
+import EditorScreen from '../views/EditorScreen.vue'
+import SettingsScreen from '../views/SettingsScreen.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('../views/HomeScreen.vue'),
-    meta: { transition: 'fade' }
+    component: HomeScreen
   },
   {
-    path: '/editor/:projectId',
+    path: '/editor/:id',
     name: 'Editor',
-    component: () => import('../views/EditorScreen.vue'),
-    meta: { transition: 'slide-left' }
+    component: EditorScreen
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: () => import('../views/SettingsScreen.vue'),
-    meta: { transition: 'slide-left' }
+    component: SettingsScreen
   }
 ]
 
@@ -28,4 +27,3 @@ const router = createRouter({
 })
 
 export default router
-EOF
