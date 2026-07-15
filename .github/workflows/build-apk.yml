@@ -1,4 +1,4 @@
-name: Build HEAVY APK
+name: Build APK
 
 on: workflow_dispatch
 
@@ -13,7 +13,7 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Install NPM
+      - name: Install
         run: npm install
       
       - name: Build Web
@@ -23,6 +23,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+      
+      - name: Update Gradle Version
+        run: |
+          # Force update gradle wrapper
+          sed -i 's/gradle-8.0.2-all.zip/gradle-8.5-bin.zip/g' android/gradle/wrapper/gradle-wrapper.properties
+          cat android/gradle/wrapper/gradle-wrapper.properties
       
       - name: Sync Capacitor
         run: |
@@ -37,5 +43,5 @@ jobs:
       
       - uses: actions/upload-artifact@v4
         with:
-          name: HEAVY-APK
+          name: APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
