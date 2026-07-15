@@ -20,7 +20,9 @@ jobs:
           node-version: '20'
       
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install
+          npm install @capacitor/cli @capacitor/core @capacitor/android
       
       - name: Build Web App
         run: npm run build
@@ -30,22 +32,29 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
       
+      - name: Setup Android SDK (Fixed)
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34'
+      
+      - name: Install Build Tools
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;34.0.0" 2>/dev/null || \
+          yes | $ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager "build-tools;34.0.0" 2>/dev/null || true
+          echo "✅ SDK ready"
+      
       - name: Create Android Project
         run: |
-          npm install @capacitor/cli @capacitor/android
           rm -rf android
           npx cap add android
           npx cap sync android
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
       
       - name: Build APK
-        env:
-          ANDROID_HOME: /usr/local/lib/android/sdk
-          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
-          echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon
       
       - name: Upload APK
         uses: actions/upload-artifact@v4
