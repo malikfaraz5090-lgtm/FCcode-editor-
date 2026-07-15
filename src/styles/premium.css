@@ -1,0 +1,57 @@
+/* ============================================
+   PREMIUM CSS FRAMEWORK - Faraz Code Editor
+   ============================================ */
+
+/* Premium Gradients */
+.gradient-blue { background: linear-gradient(135deg, #007acc, #00d2ff); }
+.gradient-purple { background: linear-gradient(135deg, #667eea, #764ba2); }
+.gradient-sunset { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.gradient-ocean { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.gradient-fire { background: linear-gradient(135deg, #fa709a, #fee140); }
+.gradient-forest { background: linear-gradient(135deg, #11998e, #38ef7d); }
+.gradient-night { background: linear-gradient(135deg, #1e1e2f, #2d2d44); }
+.gradient-royal { background: linear-gradient(135deg, #434343, #000000); }
+
+/* Premium Shadows */
+.shadow-sm { box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.shadow-md { box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+.shadow-lg { box-shadow: 0 15px 45px rgba(0,0,0,0.4); }
+.shadow-xl { box-shadow: 0 25px 65px rgba(0,0,0,0.5); }
+.shadow-glow { box-shadow: 0 0 30px rgba(0,122,204,0.3); }
+.shadow-premium { box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05); }
+
+/* Premium Glass Effect */
+.glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+.glass-dark { background: rgba(0,0,0,0.3); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
+
+/* Premium Animations */
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+@keyframes pulse-glow { 0%,100% { box-shadow: 0 0 20px rgba(0,122,204,0.3); } 50% { box-shadow: 0 0 40px rgba(0,122,204,0.6); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes rotate-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes scale-in { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* Premium Cards */
+.card-premium { background: linear-gradient(145deg, #252526, #1e1e1e); border: 1px solid #333; border-radius: 16px; padding: 24px; transition: all 0.3s; }
+.card-premium:hover { transform: translateY(-5px); box-shadow: 0 20px 50px rgba(0,0,0,0.5); border-color: #007acc; }
+
+/* Premium Buttons */
+.btn-premium { padding: 14px 32px; border: none; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.3s; position: relative; overflow: hidden; }
+.btn-premium::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: left 0.5s; }
+.btn-premium:hover::after { left: 100%; }
+
+/* Premium Text */
+.text-gradient { background: linear-gradient(135deg, #00d2ff, #007acc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; }
+.text-glow { text-shadow: 0 0 20px rgba(0,122,204,0.5); }
+
+/* Premium Border */
+.border-premium { border: 1px solid; border-image: linear-gradient(135deg, #007acc, #00d2ff, #4ec9b0) 1; }
+
+/* Premium Badge */
+.badge-premium { background: linear-gradient(135deg, #007acc, #00d2ff); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+
+/* Premium Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: linear-gradient(180deg, #1e1e1e, #252526); }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #007acc, #005a9e); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #00d2ff; }

@@ -65,20 +65,10 @@
         <h2>✅ APK Ready!</h2>
         <p><strong>{{ build.appName }}.apk</strong></p>
         
-        <!-- BIG DOWNLOAD BUTTON -->
-        <button @click="downloadNow" class="big-download-btn">
+        <button @click="downloadNative" class="big-download-btn">
           📥 DOWNLOAD APK
         </button>
-        
-        <p style="font-size: 11px; color: #888; margin: 8px 0;">If download doesn't start, try:</p>
-        
-        <button @click="shareFile" class="share-btn">
-          📤 Share / Save
-        </button>
-        
-        <button @click="copyToClipboard" class="copy-btn">
-          📋 Copy to Clipboard
-        </button>
+        <p style="font-size: 10px; color: #888;">Saved in Downloads folder</p>
         
         <button @click="showSuccess = false" class="close-btn">Close</button>
       </div>
@@ -112,7 +102,6 @@ const build = ref({
 })
 
 let apkContent = ''
-let apkFileName = ''
 
 const lineCount = computed(() => {
   return activeFile.value?.content?.split('\n').length || 0
@@ -180,69 +169,32 @@ async function doBuild() {
   if (jsFile) html = html.replace('</body>', '<script>' + jsFile.content + '<\/script></body>')
   
   apkContent = html
-  apkFileName = build.value.appName.replace(/\s+/g, '_') + '.apk'
   
   building.value = false
   showBuild.value = false
   showSuccess.value = true
 }
 
-function downloadNow() {
+function downloadNative() {
   if (!apkContent) return
   
-  // METHOD 1: Direct Blob download
-  const blob = new Blob([apkContent], { type: 'application/octet-stream' })
-  const url = URL.createObjectURL(blob)
-  
-  const a = document.createElement('a')
-  a.href = url
-  a.download = apkFileName
-  document.body.appendChild(a)
-  a.click()
-  
-  setTimeout(() => {
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }, 1000)
-  
-  alert('✅ Download started! Check your Downloads folder.\n\nIf not found, use "Share / Save" button.')
-}
-
-function shareFile() {
-  if (!apkContent) return
-  
-  const blob = new Blob([apkContent], { type: 'text/html' })
-  const file = new File([blob], apkFileName, { type: 'application/octet-stream' })
-  
-  // Try Web Share API
-  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-    navigator.share({
-      title: 'Share APK',
-      text: 'Download ' + apkFileName,
-      files: [file]
-    }).catch(() => {
-      // Fallback: save via Blob URL
-      const url = URL.createObjectURL(blob)
-      window.open(url, '_blank')
-    })
+  // Try Native Android Download
+  if (window.AndroidDownloader) {
+    // Convert to base64
+    const base64 = btoa(unescape(encodeURIComponent(apkContent)))
+    const fileName = build.value.appName.replace(/\s+/g, '_') + '.apk'
+    window.AndroidDownloader.downloadFile(base64, fileName, 'application/vnd.android.package-archive')
   } else {
-    // Fallback: Open in new tab
+    // Fallback: Web download
+    const blob = new Blob([apkContent], { type: 'application/octet-stream' })
     const url = URL.createObjectURL(blob)
-    window.open(url, '_blank')
+    const a = document.createElement('a')
+    a.href = url
+    a.download = build.value.appName + '.apk'
+    a.click()
     
-    alert('📱 Choose "Save" or "Download" from the menu to save the file.')
+    alert('✅ APK saved! Check your Downloads folder.')
   }
-}
-
-function copyToClipboard() {
-  if (!apkContent) return
-  
-  // Copy HTML content to clipboard
-  navigator.clipboard.writeText(apkContent).then(() => {
-    alert('✅ Code copied to clipboard! You can paste it in a new file.')
-  }).catch(() => {
-    alert('❌ Could not copy. Please use Share button instead.')
-  })
 }
 </script>
 
@@ -279,60 +231,10 @@ function copyToClipboard() {
 .btn-cancel { padding: 9px 18px; background: #3e3e42; border: none; border-radius: 8px; color: #ccc; font-size: 13px; cursor: pointer; }
 .btn-build { padding: 9px 18px; background: #007acc; border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
 .btn-build:disabled { opacity: 0.5; }
-
 .success-dialog { text-align: center; }
 .success-dialog h2 { color: #4ec9b0; margin-bottom: 10px; }
 .success-dialog p { color: #ccc; margin: 4px 0; }
-
-.big-download-btn {
-  display: block;
-  width: 100%;
-  padding: 18px;
-  background: #007acc;
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: 700;
-  cursor: pointer;
-  margin: 12px 0;
-}
+.big-download-btn { display: block; width: 100%; padding: 18px; background: #007acc; color: #fff; border: none; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer; margin: 12px 0; }
 .big-download-btn:active { background: #005a9e; }
-
-.share-btn {
-  display: block;
-  width: 100%;
-  padding: 14px;
-  background: #4ec9b0;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  margin: 6px 0;
-}
-
-.copy-btn {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  background: #b180d7;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  cursor: pointer;
-  margin: 6px 0;
-}
-
-.close-btn {
-  margin-top: 8px;
-  padding: 8px 20px;
-  background: #3e3e42;
-  border: none;
-  border-radius: 8px;
-  color: #ccc;
-  font-size: 13px;
-  cursor: pointer;
-}
+.close-btn { margin-top: 8px; padding: 8px 20px; background: #3e3e42; border: none; border-radius: 8px; color: #ccc; font-size: 13px; cursor: pointer; }
 </style>
