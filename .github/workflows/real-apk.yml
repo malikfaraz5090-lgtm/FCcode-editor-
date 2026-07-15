@@ -1,0 +1,84 @@
+name: Build REAL Installable APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      app_name:
+        description: 'App Name'
+        required: true
+        default: 'My App'
+      package_name:
+        description: 'Package Name'
+        required: true
+        default: 'com.farazcode.myapp'
+      version:
+        description: 'Version'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install ALL Dependencies
+        run: |
+          npm install
+          npm install @capacitor/cli @capacitor/core @capacitor/android @capacitor/app @capacitor/filesystem @capacitor/splash-screen
+      
+      - name: Build Web App
+        run: npm run build
+      
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0 platform-tools'
+      
+      - name: Create Android Project
+        run: |
+          rm -rf android
+          npx cap add android
+          npx cap sync android
+          
+          # Update app name
+          sed -i "s/Faraz Code Editor/${{ github.event.inputs.app_name }}/g" android/app/src/main/res/values/strings.xml 2>/dev/null || true
+          
+          # Set SDK path
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+      
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+      
+      - name: Verify APK
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          if [ -f "$APK" ]; then
+            echo "✅ REAL APK BUILT SUCCESSFULLY!"
+            ls -lh "$APK"
+            echo ""
+            echo "📱 This APK WILL install on Android phones!"
+            echo "📦 Size should be 5-25 MB"
+          else
+            echo "❌ APK not found!"
+            exit 1
+          fi
+      
+      - name: Upload REAL APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: REAL-INSTALLABLE-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

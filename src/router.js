@@ -5,7 +5,7 @@ const router = createRouter({
   routes: [
     { path: '/', component: () => import('./views/Home.vue') },
     { path: '/editor/:id', component: () => import('./views/Editor.vue') },
-    { path: '/settings', component: () => import('./views/Settings.vue') }
+    { path: '/preview/:id', component: () => import('./views/Preview.vue') }
   ]
 })
 

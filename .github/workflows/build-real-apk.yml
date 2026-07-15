@@ -1,0 +1,134 @@
+name: 📱 Build REAL Android APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
+      app_version:
+        description: 'Version Name'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build-apk:
+    name: 🏗 Build Android APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+      
+      - name: 🟢 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: 📦 Install NPM Dependencies
+        run: |
+          echo "Installing packages..."
+          npm install
+      
+      - name: 🔨 Build Web Application
+        run: |
+          echo "Building web app..."
+          npm run build
+          echo "Build complete!"
+          ls -la dist/
+      
+      - name: ☕ Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - name: 🤖 Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: |
+            platforms;android-34
+            build-tools;34.0.0
+            platform-tools
+      
+      - name: 📱 Install Capacitor Android
+        run: |
+          npm install @capacitor/cli @capacitor/android
+          npx cap --version
+      
+      - name: 🏗 Create Android Project
+        run: |
+          echo "Removing old android folder..."
+          rm -rf android
+          echo "Creating fresh Android project..."
+          npx cap add android
+          npx cap sync android
+          echo "Android project created!"
+          ls -la android/
+      
+      - name: 🔧 Configure Android Build
+        run: |
+          # Set SDK path
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          cat android/local.properties
+          
+          # Update version
+          VERSION="${{ github.event.inputs.app_version || '1.0.0' }}"
+          echo "Setting version: $VERSION"
+          sed -i "s/versionName \"1.0\"/versionName \"$VERSION\"/g" android/app/build.gradle 2>/dev/null || true
+      
+      - name: 🔨 Build Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          echo "Starting APK build..."
+          ./gradlew assembleDebug --stacktrace
+          echo "Build complete!"
+      
+      - name: 📦 Build Release APK
+        if: github.event.inputs.build_type == 'release'
+        run: |
+          cd android
+          ./gradlew assembleRelease
+      
+      - name: 🔍 Verify APK Files
+        run: |
+          echo "Looking for APK files..."
+          find android/ -name "*.apk" -type f -ls
+          echo ""
+          echo "APK size:"
+          ls -lh android/app/build/outputs/apk/debug/app-debug.apk 2>/dev/null || echo "Debug APK not found"
+      
+      - name: 📤 Upload Debug APK (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: FarazCodeEditor-Debug-APK
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+      
+      - name: 📤 Upload Release APK (Artifact)
+        if: github.event.inputs.build_type == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: FarazCodeEditor-Release-APK
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+      
+      - name: ✅ Build Summary
+        run: |
+          echo "========================================="
+          echo "🎉 APK BUILD COMPLETE!"
+          echo "========================================="
+          echo "📱 App: Faraz Code Editor"
+          echo "📦 Version: ${{ github.event.inputs.app_version || '1.0.0' }}"
+          echo "🔧 Build: ${{ github.event.inputs.build_type || 'debug' }}"
+          echo "📥 Download APK from Artifacts above!"
+          echo "========================================="

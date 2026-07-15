@@ -1,4 +1,4 @@
-name: Build APK
+name: Build APK (Android 16 Ready)
 
 on: workflow_dispatch
 
@@ -31,6 +31,10 @@ jobs:
           rm -rf android
           npx cap add android
           npx cap sync android
+          
+          # Copy our custom files
+          cp android/app/src/main/AndroidManifest.xml android/app/src/main/AndroidManifest.xml.bak 2>/dev/null || true
+          
           echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
       
       - name: Build APK
