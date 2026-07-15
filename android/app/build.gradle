@@ -17,12 +17,9 @@ android {
         debug {
             debuggable true
             minifyEnabled false
-            multiDexEnabled true
         }
         release {
             minifyEnabled true
-            shrinkResources true
-            multiDexEnabled true
         }
     }
     
@@ -33,20 +30,15 @@ android {
 }
 
 dependencies {
-    // MultiDex
-    implementation 'androidx.multidex:multidex:2.0.1'
-    
-    // AndroidX
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.webkit:webkit:1.9.0'
     implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
     
-    // Capacitor
     implementation project(':capacitor-android')
     implementation project(':capacitor-app')
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-share')
     implementation project(':capacitor-splash-screen')
-    implementation project(':capacitor-status-bar')
 }
