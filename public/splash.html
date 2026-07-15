@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1e1e1e, #0f3460, #16213e);
+    font-family: Arial, sans-serif;
+  }
+  .container {
+    text-align: center;
+    color: white;
+  }
+  .logo {
+    font-size: 80px;
+    font-weight: bold;
+    background: linear-gradient(135deg, #00d2ff, #007acc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: glow 2s infinite;
+  }
+  @keyframes glow {
+    0%, 100% { filter: drop-shadow(0 0 10px #007acc); }
+    50% { filter: drop-shadow(0 0 30px #00d2ff); }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">FCE</div>
+    <h1>Faraz Code Editor</h1>
+    <p>Professional Code Editor</p>
+  </div>
+</body>
+</html>

@@ -1,7 +1,6 @@
 name: Build APK
 
-on:
-  workflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   build:
@@ -40,7 +39,8 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon
       
-      - uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
         with:
-          name: APK
+          name: FarazCodeEditor-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
