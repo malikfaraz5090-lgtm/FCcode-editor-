@@ -64,25 +64,30 @@
       <div class="dialog success-dialog">
         <h2>✅ APK Ready!</h2>
         <p><strong>{{ build.appName }}.apk</strong></p>
-        <p>Size: {{ apkSize }}</p>
         
-        <!-- DOWNLOAD LINK -->
-        <a :href="downloadUrl" :download="build.appName + '.apk'" class="download-link" ref="downloadLink">
-          📥 Download APK
-        </a>
+        <!-- BIG DOWNLOAD BUTTON -->
+        <button @click="downloadNow" class="big-download-btn">
+          📥 DOWNLOAD APK
+        </button>
         
-        <p class="or-text">or</p>
+        <p style="font-size: 11px; color: #888; margin: 8px 0;">If download doesn't start, try:</p>
         
-        <!-- DIRECT BUTTON -->
-        <button @click="forceDownload" class="btn-download">📱 Force Download</button>
-        <button @click="showSuccess = false" class="btn-close">Close</button>
+        <button @click="shareFile" class="share-btn">
+          📤 Share / Save
+        </button>
+        
+        <button @click="copyToClipboard" class="copy-btn">
+          📋 Copy to Clipboard
+        </button>
+        
+        <button @click="showSuccess = false" class="close-btn">Close</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '../stores/projectStore.js'
 
@@ -99,15 +104,15 @@ const showBuild = ref(false)
 const showSuccess = ref(false)
 const building = ref(false)
 const progress = ref(0)
-const apkSize = ref('')
-const downloadUrl = ref('')
-const downloadLink = ref(null)
 
 const build = ref({
   appName: '',
   package: 'com.example.app',
   version: '1.0.0'
 })
+
+let apkContent = ''
+let apkFileName = ''
 
 const lineCount = computed(() => {
   return activeFile.value?.content?.split('\n').length || 0
@@ -163,81 +168,81 @@ async function doBuild() {
   
   for (let i = 10; i <= 100; i += 15) {
     progress.value = i
-    await new Promise(r => setTimeout(r, 300))
+    await new Promise(r => setTimeout(r, 200))
   }
   
-  // BUILD HTML CONTENT
   const htmlFile = project.value.files.find(f => f.name.endsWith('.html') || f.name.endsWith('.htm'))
   const cssFile = project.value.files.find(f => f.name.endsWith('.css'))
   const jsFile = project.value.files.find(f => f.name.endsWith('.js'))
   
-  let html = htmlFile?.content || '<!DOCTYPE html>\n<html>\n<body>\n<h1>' + build.value.appName + '</h1>\n</body>\n</html>'
+  let html = htmlFile?.content || '<html><body><h1>' + build.value.appName + '</h1></body></html>'
+  if (cssFile) html = html.replace('</head>', '<style>' + cssFile.content + '</style></head>')
+  if (jsFile) html = html.replace('</body>', '<script>' + jsFile.content + '<\/script></body>')
   
-  if (cssFile) {
-    if (html.includes('</head>')) {
-      html = html.replace('</head>', '<style>' + cssFile.content + '</style></head>')
-    } else {
-      html = '<style>' + cssFile.content + '</style>\n' + html
-    }
-  }
-  
-  if (jsFile) {
-    if (html.includes('</body>')) {
-      html = html.replace('</body>', '<script>' + jsFile.content + '<\/script></body>')
-    } else {
-      html += '\n<script>' + jsFile.content + '<\/script>'
-    }
-  }
-  
-  // CREATE DOWNLOAD URL - Using data URI for mobile compatibility
-  const base64 = btoa(unescape(encodeURIComponent(html)))
-  downloadUrl.value = 'data:application/octet-stream;base64,' + base64
-  apkSize.value = (html.length / 1024).toFixed(1) + ' KB'
+  apkContent = html
+  apkFileName = build.value.appName.replace(/\s+/g, '_') + '.apk'
   
   building.value = false
   showBuild.value = false
   showSuccess.value = true
-  
-  // Auto click download after show
-  await nextTick()
-  setTimeout(() => {
-    if (downloadLink.value) {
-      downloadLink.value.click()
-    }
-  }, 500)
 }
 
-function forceDownload() {
-  if (!downloadUrl.value) return
+function downloadNow() {
+  if (!apkContent) return
   
-  // Create blob and force download
-  const base64 = downloadUrl.value.split(',')[1]
-  const binary = atob(base64)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i)
-  }
-  
-  const blob = new Blob([bytes], { type: 'application/octet-stream' })
+  // METHOD 1: Direct Blob download
+  const blob = new Blob([apkContent], { type: 'application/octet-stream' })
   const url = URL.createObjectURL(blob)
   
-  // Method 1: Anchor click
   const a = document.createElement('a')
   a.href = url
-  a.download = build.value.appName + '.apk'
-  a.style.display = 'none'
+  a.download = apkFileName
   document.body.appendChild(a)
   a.click()
-  
-  // Method 2: Open in new tab (mobile fallback)
-  setTimeout(() => {
-    window.open(url, '_blank')
-  }, 500)
   
   setTimeout(() => {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-  }, 2000)
+  }, 1000)
+  
+  alert('✅ Download started! Check your Downloads folder.\n\nIf not found, use "Share / Save" button.')
+}
+
+function shareFile() {
+  if (!apkContent) return
+  
+  const blob = new Blob([apkContent], { type: 'text/html' })
+  const file = new File([blob], apkFileName, { type: 'application/octet-stream' })
+  
+  // Try Web Share API
+  if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+    navigator.share({
+      title: 'Share APK',
+      text: 'Download ' + apkFileName,
+      files: [file]
+    }).catch(() => {
+      // Fallback: save via Blob URL
+      const url = URL.createObjectURL(blob)
+      window.open(url, '_blank')
+    })
+  } else {
+    // Fallback: Open in new tab
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank')
+    
+    alert('📱 Choose "Save" or "Download" from the menu to save the file.')
+  }
+}
+
+function copyToClipboard() {
+  if (!apkContent) return
+  
+  // Copy HTML content to clipboard
+  navigator.clipboard.writeText(apkContent).then(() => {
+    alert('✅ Code copied to clipboard! You can paste it in a new file.')
+  }).catch(() => {
+    alert('❌ Could not copy. Please use Share button instead.')
+  })
 }
 </script>
 
@@ -253,7 +258,6 @@ function forceDownload() {
 .tab { padding: 6px 14px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 4px; color: #999; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; }
 .tab.active { color: #fff; border-bottom: 2px solid #007acc; }
 .tab-close { color: #999; }
-.tab-close:hover { color: #f44747; }
 .add-tab { border: 1px dashed #555; color: #007acc; }
 .editor-area { flex: 1; overflow: hidden; }
 .code-editor { width: 100%; height: 100%; background: #1e1e1e; color: #d4d4d4; border: none; padding: 16px; font-family: monospace; font-size: 14px; line-height: 1.6; resize: none; outline: none; }
@@ -275,11 +279,60 @@ function forceDownload() {
 .btn-cancel { padding: 9px 18px; background: #3e3e42; border: none; border-radius: 8px; color: #ccc; font-size: 13px; cursor: pointer; }
 .btn-build { padding: 9px 18px; background: #007acc; border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
 .btn-build:disabled { opacity: 0.5; }
+
 .success-dialog { text-align: center; }
-.success-dialog h2 { color: #4ec9b0; margin-bottom: 8px; }
+.success-dialog h2 { color: #4ec9b0; margin-bottom: 10px; }
 .success-dialog p { color: #ccc; margin: 4px 0; }
-.download-link { display: block; padding: 12px; background: #007acc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 10px 0; }
-.or-text { color: #666; margin: 8px 0; }
-.btn-download { padding: 12px 24px; background: #4ec9b0; border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; }
-.btn-close { margin-top: 8px; padding: 8px 20px; background: #3e3e42; border: none; border-radius: 8px; color: #ccc; font-size: 13px; cursor: pointer; }
+
+.big-download-btn {
+  display: block;
+  width: 100%;
+  padding: 18px;
+  background: #007acc;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 12px 0;
+}
+.big-download-btn:active { background: #005a9e; }
+
+.share-btn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  background: #4ec9b0;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 6px 0;
+}
+
+.copy-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  background: #b180d7;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 6px 0;
+}
+
+.close-btn {
+  margin-top: 8px;
+  padding: 8px 20px;
+  background: #3e3e42;
+  border: none;
+  border-radius: 8px;
+  color: #ccc;
+  font-size: 13px;
+  cursor: pointer;
+}
 </style>
