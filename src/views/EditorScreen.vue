@@ -20,14 +20,9 @@
       <textarea v-model="activeFile.content" @input="onCodeChange" class="code-editor" placeholder="Write your code here..." spellcheck="false"></textarea>
     </div>
 
-    <div class="no-file" v-else-if="project">
-      <p>Select a file to edit</p>
-    </div>
-
     <div class="statusbar" v-if="activeFile">
       <span>{{ activeFile.language || 'text' }}</span>
       <span>Lines: {{ lineCount }}</span>
-      <span>{{ saved ? '✓ Saved' : '● Modified' }}</span>
     </div>
 
     <!-- BUILD DIALOG -->
@@ -50,19 +45,14 @@
             <label>Version</label>
             <input v-model="build.version" class="input" placeholder="1.0.0">
           </div>
-
-          <div v-if="logs.length" class="logs-box">
-            <div v-for="(l, i) in logs" :key="i" class="log-line">{{ l }}</div>
-          </div>
-
           <div v-if="building" class="progress">
             <div class="bar"><div class="fill" :style="{ width: progress + '%' }"></div></div>
-            <p>{{ progress }}% - {{ statusText }}</p>
+            <p>{{ progress }}%</p>
           </div>
         </div>
         <div class="dialog-footer">
           <button @click="showBuild = false" class="btn-cancel">Cancel</button>
-          <button @click="doBuild" class="btn-build" :disabled="building || !build.appName || !build.package">
+          <button @click="doBuild" class="btn-build" :disabled="building || !build.appName">
             {{ building ? 'Building...' : '🔨 Build APK' }}
           </button>
         </div>
@@ -73,23 +63,26 @@
     <div v-if="showSuccess" class="overlay" @click.self="showSuccess = false">
       <div class="dialog success-dialog">
         <h2>✅ APK Ready!</h2>
-        <div class="apk-info">
-          <p><strong>{{ build.appName }}.apk</strong></p>
-          <p>Size: {{ apkSize }}</p>
-        </div>
-        <p class="install-note">⬇️ Click below to download</p>
-        <div class="btns">
-          <button @click="downloadApk" class="btn-download">📥 Download APK</button>
-          <button @click="downloadApkDirect" class="btn-direct">📱 Direct Download</button>
-          <button @click="showSuccess = false" class="btn-close">Close</button>
-        </div>
+        <p><strong>{{ build.appName }}.apk</strong></p>
+        <p>Size: {{ apkSize }}</p>
+        
+        <!-- DOWNLOAD LINK -->
+        <a :href="downloadUrl" :download="build.appName + '.apk'" class="download-link" ref="downloadLink">
+          📥 Download APK
+        </a>
+        
+        <p class="or-text">or</p>
+        
+        <!-- DIRECT BUTTON -->
+        <button @click="forceDownload" class="btn-download">📱 Force Download</button>
+        <button @click="showSuccess = false" class="btn-close">Close</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectStore } from '../stores/projectStore.js'
 
@@ -106,9 +99,9 @@ const showBuild = ref(false)
 const showSuccess = ref(false)
 const building = ref(false)
 const progress = ref(0)
-const statusText = ref('')
-const logs = ref([])
 const apkSize = ref('')
+const downloadUrl = ref('')
+const downloadLink = ref(null)
 
 const build = ref({
   appName: '',
@@ -167,79 +160,84 @@ function goBack() {
 async function doBuild() {
   building.value = true
   progress.value = 0
-  logs.value = []
-  statusText.value = 'Starting...'
   
-  const steps = [
-    { p: 10, s: 'Validating files...' },
-    { p: 25, s: 'Creating manifest...' },
-    { p: 40, s: 'Building resources...' },
-    { p: 55, s: 'Compiling code...' },
-    { p: 70, s: 'Packaging APK...' },
-    { p: 85, s: 'Optimizing...' },
-    { p: 100, s: 'Complete!' }
-  ]
-  
-  for (const step of steps) {
-    progress.value = step.p
-    statusText.value = step.s
-    logs.value.push(step.s)
+  for (let i = 10; i <= 100; i += 15) {
+    progress.value = i
     await new Promise(r => setTimeout(r, 300))
   }
   
-  // Create HTML content from files
+  // BUILD HTML CONTENT
   const htmlFile = project.value.files.find(f => f.name.endsWith('.html') || f.name.endsWith('.htm'))
   const cssFile = project.value.files.find(f => f.name.endsWith('.css'))
   const jsFile = project.value.files.find(f => f.name.endsWith('.js'))
   
-  let html = htmlFile?.content || '<h1>My App</h1>'
+  let html = htmlFile?.content || '<!DOCTYPE html>\n<html>\n<body>\n<h1>' + build.value.appName + '</h1>\n</body>\n</html>'
   
   if (cssFile) {
-    html = html.replace('</head>', '<style>' + cssFile.content + '</style></head>')
+    if (html.includes('</head>')) {
+      html = html.replace('</head>', '<style>' + cssFile.content + '</style></head>')
+    } else {
+      html = '<style>' + cssFile.content + '</style>\n' + html
+    }
   }
+  
   if (jsFile) {
-    html = html.replace('</body>', '<script>' + jsFile.content + '<\/script></body>')
+    if (html.includes('</body>')) {
+      html = html.replace('</body>', '<script>' + jsFile.content + '<\/script></body>')
+    } else {
+      html += '\n<script>' + jsFile.content + '<\/script>'
+    }
   }
   
-  // Create complete HTML document
-  const fullHTML = '<!DOCTYPE html>\n<html>\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>' + build.value.appName + '</title>\n</head>\n<body>\n' + html + '\n</body>\n</html>'
-  
-  // Create blob
-  const blob = new Blob([fullHTML], { type: 'text/html' })
-  apkSize.value = (blob.size / 1024).toFixed(1) + ' KB'
-  
-  // Store with .apk extension
-  const file = new File([blob], build.value.appName + '.apk', { type: 'application/octet-stream' })
-  window._apkFile = file
-  window._apkUrl = URL.createObjectURL(blob)
-  window._apkName = build.value.appName + '.apk'
+  // CREATE DOWNLOAD URL - Using data URI for mobile compatibility
+  const base64 = btoa(unescape(encodeURIComponent(html)))
+  downloadUrl.value = 'data:application/octet-stream;base64,' + base64
+  apkSize.value = (html.length / 1024).toFixed(1) + ' KB'
   
   building.value = false
   showBuild.value = false
   showSuccess.value = true
+  
+  // Auto click download after show
+  await nextTick()
+  setTimeout(() => {
+    if (downloadLink.value) {
+      downloadLink.value.click()
+    }
+  }, 500)
 }
 
-function downloadApk() {
-  if (!window._apkUrl) return
+function forceDownload() {
+  if (!downloadUrl.value) return
   
-  // Method 1: Direct link
+  // Create blob and force download
+  const base64 = downloadUrl.value.split(',')[1]
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  
+  const blob = new Blob([bytes], { type: 'application/octet-stream' })
+  const url = URL.createObjectURL(blob)
+  
+  // Method 1: Anchor click
   const a = document.createElement('a')
-  a.href = window._apkUrl
-  a.download = window._apkName
+  a.href = url
+  a.download = build.value.appName + '.apk'
   a.style.display = 'none'
   document.body.appendChild(a)
   a.click()
   
+  // Method 2: Open in new tab (mobile fallback)
+  setTimeout(() => {
+    window.open(url, '_blank')
+  }, 500)
+  
   setTimeout(() => {
     document.body.removeChild(a)
-  }, 1000)
-}
-
-function downloadApkDirect() {
-  if (!window._apkUrl) return
-  
-  // Method 2: Open in new tab (works on mobile)
-  window.open(window._apkUrl, '_blank')
+    URL.revokeObjectURL(url)
+  }, 2000)
 }
 </script>
 
@@ -259,19 +257,16 @@ function downloadApkDirect() {
 .add-tab { border: 1px dashed #555; color: #007acc; }
 .editor-area { flex: 1; overflow: hidden; }
 .code-editor { width: 100%; height: 100%; background: #1e1e1e; color: #d4d4d4; border: none; padding: 16px; font-family: monospace; font-size: 14px; line-height: 1.6; resize: none; outline: none; }
-.no-file { flex: 1; display: flex; align-items: center; justify-content: center; color: #666; }
 .statusbar { display: flex; justify-content: space-between; padding: 4px 14px; background: #007acc; color: #fff; font-size: 11px; }
 
 .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.dialog { background: #252526; border-radius: 16px; width: 92%; max-width: 420px; padding: 20px; }
+.dialog { background: #252526; border-radius: 16px; width: 92%; max-width: 400px; padding: 20px; }
 .dialog-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .dialog-header h2 { color: #fff; font-size: 18px; }
 .close-btn { background: none; border: none; color: #999; font-size: 20px; cursor: pointer; }
 .field { margin-bottom: 12px; }
 .field label { display: block; font-size: 12px; color: #aaa; margin-bottom: 4px; }
 .input { width: 100%; padding: 9px; background: #1e1e1e; border: 1px solid #3e3e42; border-radius: 8px; color: #fff; font-size: 13px; }
-.logs-box { background: #1e1e1e; border-radius: 8px; padding: 10px; max-height: 120px; overflow-y: auto; font-family: monospace; font-size: 11px; margin: 10px 0; }
-.log-line { padding: 2px 0; color: #4ec9b0; }
 .progress { text-align: center; margin: 10px 0; }
 .bar { height: 5px; background: #3e3e42; border-radius: 3px; overflow: hidden; }
 .fill { height: 100%; background: #007acc; transition: width 0.3s; }
@@ -282,11 +277,9 @@ function downloadApkDirect() {
 .btn-build:disabled { opacity: 0.5; }
 .success-dialog { text-align: center; }
 .success-dialog h2 { color: #4ec9b0; margin-bottom: 8px; }
-.apk-info { background: #1e1e1e; border-radius: 8px; padding: 12px; margin: 10px 0; }
-.apk-info p { color: #ccc; margin: 4px 0; font-size: 13px; }
-.install-note { font-size: 12px; color: #ff9800; margin: 8px 0; }
-.btns { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
-.btn-download { padding: 10px 22px; background: #007acc; border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
-.btn-direct { padding: 10px 22px; background: #4ec9b0; border: none; border-radius: 8px; color: #fff; font-size: 13px; cursor: pointer; }
-.btn-close { padding: 10px 22px; background: #3e3e42; border: none; border-radius: 8px; color: #ccc; font-size: 13px; cursor: pointer; }
+.success-dialog p { color: #ccc; margin: 4px 0; }
+.download-link { display: block; padding: 12px; background: #007acc; color: #fff; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 10px 0; }
+.or-text { color: #666; margin: 8px 0; }
+.btn-download { padding: 12px 24px; background: #4ec9b0; border: none; border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; }
+.btn-close { margin-top: 8px; padding: 8px 20px; background: #3e3e42; border: none; border-radius: 8px; color: #ccc; font-size: 13px; cursor: pointer; }
 </style>
