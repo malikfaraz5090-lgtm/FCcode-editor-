@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     
     steps:
       - uses: actions/checkout@v4
@@ -20,9 +20,7 @@ jobs:
           node-version: '20'
       
       - name: Install Dependencies
-        run: |
-          npm install
-          npm install @capacitor/cli @capacitor/core @capacitor/android
+        run: npm install
       
       - name: Build Web App
         run: npm run build
@@ -34,26 +32,20 @@ jobs:
       
       - name: Create Android Project
         run: |
+          npm install @capacitor/cli @capacitor/android
           rm -rf android
           npx cap add android
           npx cap sync android
-          
-          # Use system Android SDK
-          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
-          echo "✅ Android project ready"
       
       - name: Build APK
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
+          echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
           cd android
           chmod +x gradlew
-          export ANDROID_HOME=/usr/local/lib/android/sdk
-          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
-          ./gradlew assembleDebug --no-daemon
-      
-      - name: Find APK
-        run: |
-          find android/ -name "*.apk" -type f
-          ls -lh android/app/build/outputs/apk/debug/
+          ./gradlew assembleDebug --no-daemon --stacktrace
       
       - name: Upload APK
         uses: actions/upload-artifact@v4
